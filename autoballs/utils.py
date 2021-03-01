@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from nd2reader import ND2Reader
 
-import helper
+import autoballs.helper as helper
 
 
 def imread(file):
