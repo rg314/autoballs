@@ -1,5 +1,9 @@
 # Other extensions
 .vscode
+data/
+data_tile/
+.git-rewrite/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
