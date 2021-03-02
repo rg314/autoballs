@@ -1,5 +1,7 @@
 import os
 import cv2
+import tempfile
+import pandas as pd 
 import numpy as np
 import matplotlib.pyplot as plt 
 from nd2reader import ND2Reader
@@ -100,14 +102,94 @@ def get_img_from_seg(path_to_file):
 		raise ValueError(msg)
 
 # helper function for data visualization
-def visualize(**images):
+def visualize(show=False, **images):
     """Plot images in one row."""
     n = len(images)
-    plt.figure(figsize=(16, 5))
+    fig = plt.figure(figsize=(16, 5))
     for i, (name, image) in enumerate(images.items()):
         plt.subplot(1, n, i + 1)
         plt.xticks([])
         plt.yticks([])
         plt.title(' '.join(name.split('_')).title())
-        plt.imshow(image)
-    plt.show()
+        if len(image.shape)==2:
+            plt.imshow(image,cmap='gray')
+        else:
+            plt.imshow(image)
+
+    plt.tight_layout()
+    
+    if show:
+        plt.show()
+
+    return fig 
+
+
+def center_eyeball(image, cnt):
+    ellipse = cv2.fitEllipse(cnt)
+    centerE = ellipse[0]
+
+    height, width = image.shape
+    wi=(width/2)
+    he=(height/2)
+
+    cX = centerE[0]
+    cY = centerE[1]
+
+    offsetX = (wi-cX)
+    offsetY = (he-cY)
+    T = np.float32([[1, 0, offsetX], [0, 1, offsetY]]) 
+    centered_image = cv2.warpAffine(~image, T, (width, height))
+
+    return ~centered_image
+
+
+
+def sholl_analysis(img, ij_obj):
+    filter_img = img
+    radius = np.max(img.shape) // 2
+
+    name = os.urandom(24).hex()
+    tmp_file = os.path.join(tempfile.gettempdir(), name) + '.tif'
+
+    cv2.imwrite(tmp_file,filter_img)
+
+
+    script = f"""importClass(Packages.ij.IJ)
+            importClass(Packages.ij.gui.PointRoi)
+            imp = IJ.openImage("{tmp_file}");
+            //IJ.setAutoThreshold(imp, "Default dark");
+            //IJ.run(imp, "Convert to Mask", "");
+            //IJ.setTool("multipoint");
+            IJ.run(imp, "Convert to Mask", "");
+            imp.setRoi(new PointRoi({radius},{radius},"small yellow hybrid"));
+            imp.show();
+            IJ.run(imp, "Sholl Analysis...", "starting=10 ending={radius} radius_step=0 #_samples=5 integration=Mean enclosing=1 #_primary=0 infer fit linear polynomial=[Best fitting degree] most normalizer=Area create overlay save directory={tempfile.gettempdir()}");
+            IJ.run("Close All", "");
+            """
+    
+    args = {}
+    ij_obj.py.run_script('js', script, args)
+
+    tmp_csv = os.path.join(tempfile.gettempdir(), name) + '_Sholl-Profiles.csv'
+    sholl_df = pd.read_csv(tmp_csv)
+    
+    tmp_mask = os.path.join(tempfile.gettempdir(), name) + '_ShollMask.tif'
+    sholl_mask = cv2.imread(tmp_mask, -1)
+    constant = (255-0)/(sholl_mask.max()-sholl_mask.min()) 
+    img_stretch = sholl_mask * constant 
+    sholl_mask = cv2.applyColorMap(img_stretch.astype('uint8'), cv2.COLORMAP_HSV)
+
+
+    centered = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    overlay_mask = cv2.addWeighted(centered,1,sholl_mask,1,0)
+
+    return sholl_df, overlay_mask
+
+def resize(img, scale_percent=50):
+    width = int(img.shape[1] * scale_percent / 100)
+    height = int(img.shape[0] * scale_percent / 100)
+    dim = (width, height)
+    return cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+
+
+ 
