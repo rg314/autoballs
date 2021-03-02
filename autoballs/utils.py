@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt 
 from nd2reader import ND2Reader
+from scipy.signal import convolve2d
 
 import autoballs.helper as helper
 
@@ -41,6 +42,52 @@ def make_figure(list_of_images):
     plt.tight_layout()
     return fig
 
+def kuwahara_filter(image, kernel_size=5):
+    """桑原フィルターを適用した画像を返す
+    https://github.com/Kazuhito00/Kuwahara-Filter
+    Args:
+        image: OpenCV Image
+        kernel_size: Kernel size is an odd number of 5 or more
+
+    Returns:
+        Image after applying the filter.
+    """
+    if len(image.shape) == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    
+    height, width, channel = image.shape[0], image.shape[1], image.shape[2]
+
+    r = int((kernel_size - 1) / 2)
+    r = r if r >= 2 else 2
+
+    image = np.pad(image, ((r, r), (r, r), (0, 0)), "edge")
+
+    average, variance = cv2.integral2(image)
+    average = (average[:-r - 1, :-r - 1] + average[r + 1:, r + 1:] -
+               average[r + 1:, :-r - 1] - average[:-r - 1, r + 1:]) / (r +
+                                                                       1)**2
+    variance = ((variance[:-r - 1, :-r - 1] + variance[r + 1:, r + 1:] -
+                 variance[r + 1:, :-r - 1] - variance[:-r - 1, r + 1:]) /
+                (r + 1)**2 - average**2).sum(axis=2)
+
+    def filter(i, j):
+        return np.array([
+            average[i, j], average[i + r, j], average[i, j + r], average[i + r,
+                                                                         j + r]
+        ])[(np.array([
+            variance[i, j], variance[i + r, j], variance[i, j + r],
+            variance[i + r, j + r]
+        ]).argmin(axis=0).flatten(), j.flatten(),
+            i.flatten())].reshape(width, height, channel).transpose(1, 0, 2)
+
+    filtered_image = filter(*np.meshgrid(np.arange(height), np.arange(width)))
+
+    filtered_image = filtered_image.astype(image.dtype)
+    filtered_image = filtered_image.copy()
+
+    return filtered_image
+
+
 def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12, bandpass_low = 120, gamma=1, normalize=True):
 
     img_fft = helper.fft(image)
@@ -59,20 +106,51 @@ def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12
     data *= (255.0/data.max())
     data = data.astype('uint8')
 
-    # apply clache 
+    # apply clache to enhance contrast
     img = cv2.cvtColor(data, cv2.COLOR_GRAY2BGR)
     lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
     cl = clahe.apply(l)
     limg = cv2.merge((cl,a,b))
-    final = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)[:,:,0]
+    final = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)[:,:,0]
 
+    # threshold
     threshold = cv2.adaptiveThreshold(final,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,6)
 
     return threshold
 
+def segment(image, eyeball):
+    # denoise while preserving edges
+    kuwahara = kuwahara_filter(image, 3)[:,:,0]
 
+    # dilate
+    dilate1 = cv2.dilate(~kuwahara,np.ones((5,5),np.uint8),iterations = 5)
+
+    # merge
+    merge_eyeball = dilate1 + eyeball[:,:,0]
+
+    # dilate
+    dilate2 = cv2.dilate(merge_eyeball,np.ones((5,5),np.uint8),iterations = 5)
+
+    # threshold
+    threshold = (dilate2 > 200) * 255
+
+    # find largest blob
+    contours,_ = cv2.findContours(threshold.astype('uint8'),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+    areas = [cv2.contourArea(c) for c in contours]
+    sorted_areas = np.sort(areas)
+
+    #bounding box (red)
+    cnt=contours[areas.index(sorted_areas[-1])] #the biggest contour
+
+    # mask image
+    mask = np.zeros(image.shape[:2], np.uint8)
+    cv2.drawContours(mask, [cnt], -1, (255, 255, 255), -1, cv2.LINE_AA)
+    target = cv2.bitwise_and(kuwahara, kuwahara, mask=mask)
+    target = target + ~mask
+    
+    return target
 
 def locate_eyeball(image):
     image = ~(image>image.min()*2) * 1
@@ -192,4 +270,25 @@ def resize(img, scale_percent=50):
     return cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
 
 
- 
+
+def mediun_axon_length_pixels(df, cnt):
+    #min circle (green)
+    (x,y),radius = cv2.minEnclosingCircle(cnt)
+    rad, inters = df[['Radius', 'Inters.']].T.values
+     
+    inters = np.trim_zeros(inters)
+    trim_zeros = len(rad) - len(inters)
+    rad = rad[trim_zeros:]
+    rad = rad - rad[0] 
+
+    output = []
+    i =0 
+    ones = np.array([])
+    while i < len(rad):
+        ones = np.append(ones, np.ones(int(inters[i]))*rad[i])
+        i+=1
+    med = np.median(ones)
+
+    return med
+
+    

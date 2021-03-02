@@ -3,6 +3,9 @@
 data/
 data_tile/
 .git-rewrite/
+Fiji.app
+Fiji.app.zip
+Fiji/
 
 
 # Byte-compiled / optimized / DLL files
