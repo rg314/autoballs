@@ -92,10 +92,11 @@ def main():
                 res_df.to_csv(configs['results_path']+'/res.csv')
 
                 if configs['create_results'] and configs['sholl']:
-                    images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
-                    fig = visualize(show=False, **images)
-                    plt.savefig(configs['results_path'] + '/example_proc.png')
-                    plt.close()
+                    pass
+                    # images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
+                    # fig = visualize(show=False, **images)
+                    # plt.savefig(configs['results_path'] + '/example_proc.png')
+                    # plt.close()
 
 
 
