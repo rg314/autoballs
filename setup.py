@@ -12,12 +12,20 @@ CLASSIFIERS = [
 ]
 
 REQUIREMENTS = ['codecov==2.1.11']
+with open("autoballs/requirements.txt") as f:
+    for line in f.readlines():
+        line = line.partition('#')[0]
+        line = line.rstrip()
+        if not line:
+            continue
 
-
+        REQUIREMENTS.append(line)
 
 PACKAGES = [
     'autoballs',
 ]
+
+DATA = {'autoballs': ['requirements.txt'],}
 
 SETUP_REQUIRES = ('pytest-cov', 'pytest-runner','pytest', 'codecov')
 TESTS_REQUIRES = ('pytest-cov','codecov')
@@ -32,7 +40,7 @@ options = {
     'classifiers': CLASSIFIERS,
     'packages': PACKAGES,
     'install_requires': REQUIREMENTS,
-    # 'package_data': DATA,
+    'package_data': DATA,
     'setup_requires': SETUP_REQUIRES,
     'test_requires': TESTS_REQUIRES
 }
