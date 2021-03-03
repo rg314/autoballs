@@ -1,6 +1,10 @@
-[![Build Status](https://travis-ci.com/rg314/autoballs.svg?token=BCkcrsWckKEnE7AqL2uD&branch=main)](https://travis-ci.com/rg314/autoballs)
+[![Build Status](https://travis-ci.com/rg314/autoballs.svg?token=BCkcrsWckKEnE7AqL2uD&branch=main)](https://travis-ci.com/rg314/autoballs) 
+[![codecov](https://codecov.io/gh/rg314/autoballs/branch/main/graph/badge.svg?token=35L8J85XO9)](https://codecov.io/gh/rg314/autoballs)
 
-# autoballs
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/35999546/109693171-44312080-7b81-11eb-812a-2659d07cd632.png" alt="Sublime's custom image"/>
+</p>
+
 Pipeline for analysis of ex vivo explants
 
 
