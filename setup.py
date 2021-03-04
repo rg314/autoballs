@@ -23,6 +23,7 @@ with open("autoballs/requirements.txt") as f:
 
 PACKAGES = [
     'autoballs',
+    'autoballs.network',
 ]
 
 DATA = {'autoballs': ['requirements.txt'],}

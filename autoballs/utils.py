@@ -8,6 +8,7 @@ from nd2reader import ND2Reader
 from scipy.signal import convolve2d
 
 import autoballs.helper as helper
+from scyjava import jimport
 
 
 def imread(file):
@@ -222,46 +223,106 @@ def center_eyeball(image, cnt):
 
 
 
-def sholl_analysis(img, ij_obj):
-    filter_img = img
-    radius = np.max(img.shape) // 2
+def sholl_analysis(img, ij_obj, headless=True):
+    """
+    Thank you Tiago Ferreira for the input
+    https://forum.image.sc/t/automated-sholl-analysis-headless/49601
+    https://github.com/morphonets/SNT/blob/master/src/main/resources/script_templates/Neuroanatomy/Analysis/Sholl_Extract_Profile_From_Image_Demo.py
+    """
 
-    name = os.urandom(24).hex()
-    tmp_file = os.path.join(tempfile.gettempdir(), name) + '.tif'
-
-    cv2.imwrite(tmp_file,filter_img)
+    ij = ij_obj
+    imp = ij.py.to_java(img)
 
 
-    script = f"""importClass(Packages.ij.IJ)
-            importClass(Packages.ij.gui.PointRoi)
-            imp = IJ.openImage("{tmp_file}");
-            //IJ.setAutoThreshold(imp, "Default dark");
-            //IJ.run(imp, "Convert to Mask", "");
-            //IJ.setTool("multipoint");
-            IJ.run(imp, "Convert to Mask", "");
-            imp.setRoi(new PointRoi({radius},{radius},"small yellow hybrid"));
-            imp.show();
-            IJ.run(imp, "Sholl Analysis...", "starting=10 ending={radius} radius_step=0 #_samples=5 integration=Mean enclosing=1 #_primary=0 infer fit linear polynomial=[Best fitting degree] most normalizer=Area create overlay save directory={tempfile.gettempdir()}");
-            IJ.run("Close All", "");
-            """
+    # from sc.fiji.snt.analysis.sholl import (Profile, ShollUtils)
+    Profile = jimport('sc.fiji.snt.analysis.sholl.Profile')
+    ShollUtils = jimport('sc.fiji.snt.analysis.sholl.ShollUtils')
+    ImageParser2D = jimport('sc.fiji.snt.analysis.sholl.parsers.ImageParser2D')
+    ImageParser3D = jimport('sc.fiji.snt.analysis.sholl.parsers.ImageParser3D')
+
+    # We may want to set specific options depending on whether we are parsing a
+    # 2D or a 3D image. If the image has multiple channels/time points, we set
+    # the C,T position to be analyzed by activating them. The channel and frame
+    # will be stored in the profile properties map and can be retrieved later):
+    if imp.getNSlices() == 1:
+        parser = ImageParser2D(imp)
+        parser.setRadiiSpan(0, ImageParser2D.MEAN) # mean of 4 measurements at every radius
+        parser.setPosition(1, 1, 1) # channel, frame, Z-slice
+    else: 
+        parser = ImageParser3D(imp)
+        parser.setSkipSingleVoxels(True) # ignore isolated voxels
+        parser.setPosition(1, 1) # channel, frame
+  
+    # Segmentation: we can set the threshold manually using one of 2 ways:
+    # 1. manually: parser.setThreshold(lower_t, upper_t)
+    # 2. from the image itself: e.g., IJ.setAutoThreshold(imp, "Huang")
+    # If the image is already binarized, we can skip setting threshold levels:
+    if not (imp.isThreshold() or imp.getProcessor().isBinary()):
+        ij.setAutoThreshold(imp, "Otsu dark")
+
+    # Center: the x,y,z coordinates of center of analysis. In a real-case usage
+    # these would be retrieved from ROIs or a centroid of a segmentation routine.
+    # If no ROI exists coordinates can be set in spatially calibrated units
+    # (floats) or pixel coordinates (integers):
+    if imp.getRoi() is None:
+        xc = int(round(imp.getWidth()/2))
+        yc = int(round(imp.getHeight()/2))
+        zc = int(round(imp.getNSlices()/2))
+        parser.setCenterPx(xc, yc, zc)  # center of image
+    else:
+        parser.setCenterFromROI()
+
+    # Sampling distances: start radius (sr), end radius (er), and step size (ss).
+    # A step size of zero would mean 'continuos sampling'. Note that end radius
+    # could also be set programmatically, e.g., from a ROI
+    parser.setRadii(10, 5, parser.maxPossibleRadius()) # (sr, er, ss)
+
+    # We could now set further options as we would do in the dialog prompt:
+    parser.setHemiShells('none')
+    # (...)
+
+    # Parse the image. This may take a while depending on image size. 3D images
+    # will be parsed using the number of threads specified in ImageJ's settings:
+    parser.parse()
+    if not parser.successful():
+        log.error(imp.getTitle() + " could not be parsed!!!")
+        return
+
+    # We can e.g., access the 'Sholl mask', a synthetic image in which foreground
+    # pixels have been assigned the no. of intersections:
+    if not headless:
+        parser.getMask().show()
+
+    # Now we can access the Sholl profile:
+    profile = parser.getProfile()
+    if profile.isEmpty():
+        log.error("All intersection counts were zero! Invalid threshold range!?")
+        return
+
+    # We can now access all the measured data stored in 'profile': Let's display
+    # the sampling shells and the detected sites of intersections (NB: If the
+    # image already has an overlay, it will be cleared):
+    profile.getROIs(imp)
     
-    args = {}
-    ij_obj.py.run_script('js', script, args)
+    # For now, lets's perform a minor cleanup of the data and plot it without
+    # doing any polynomial regression. Have a look at Sholl_Extensive_Stats_Demo
+    # script for details on how to analyze profiles with detailed granularity
+    profile.trimZeroCounts()
 
-    tmp_csv = os.path.join(tempfile.gettempdir(), name) + '_Sholl-Profiles.csv'
-    sholl_df = pd.read_csv(tmp_csv)
+    if not headless:
+        profile.plot().show()
+
+    sholl_df = pd.DataFrame(
+        {
+            'Radius': list(ij.py.from_java(profile.radii())), 
+            'Inters.': list(ij.py.from_java(profile.counts()))
+        }
+    )
     
-    tmp_mask = os.path.join(tempfile.gettempdir(), name) + '_ShollMask.tif'
-    sholl_mask = cv2.imread(tmp_mask, -1)
-    constant = (255-0)/(sholl_mask.max()-sholl_mask.min()) 
-    img_stretch = sholl_mask * constant 
-    sholl_mask = cv2.applyColorMap(img_stretch.astype('uint8'), cv2.COLORMAP_HSV)
+    mask = np.array(ij.py.from_java(parser.getMask()))
 
 
-    centered = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    overlay_mask = cv2.addWeighted(centered,1,sholl_mask,1,0)
-
-    return sholl_df, overlay_mask
+    return sholl_df, mask, profile
 
 def resize(img, scale_percent=50):
     width = int(img.shape[1] * scale_percent / 100)
@@ -271,15 +332,8 @@ def resize(img, scale_percent=50):
 
 
 
-def mediun_axon_length_pixels(df, cnt):
-    #min circle (green)
-    (x,y),radius = cv2.minEnclosingCircle(cnt)
-    rad, inters = df[['Radius', 'Inters.']].T.values
-     
-    inters = np.trim_zeros(inters)
-    trim_zeros = len(rad) - len(inters)
-    rad = rad[trim_zeros:]
-    rad = rad - rad[0] 
+def mediun_axon_length_pixels(sholl_df):
+    rad, inters = sholl_df[['Radius', 'Inters.']].T.values
 
     output = []
     i =0 
