@@ -30,6 +30,7 @@ def config():
         path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
     elif sys.platform == "win32":
         path = 'C:\\Users\\ryan\\Google Drive\\TFM Cambridge\\2021\\Frogs'
+    
 
     configs['path'] = path
 
@@ -42,6 +43,7 @@ def config():
     configs['create_results'] = False
     configs['results_path'] = configs['sample'] + '_results'
     configs['seg'] = False
+    configs['headless'] = True
 
     if configs['create_results']:
         if not os.path.exists(configs['results_path']):
@@ -53,7 +55,7 @@ def main():
     configs = config()
 
     if configs['sholl']:
-        ij_obj = get_imagej_obj()
+        ij_obj = get_imagej_obj(headless=configs['headless'])
 
     files = glob.glob(f"{configs['path']}/{configs['sample']}/**/series.nd2", recursive=True)
 
@@ -78,7 +80,7 @@ def main():
 
 
                 if configs['sholl']:
-                    sholl_df, sholl_mask = sholl_analysis(centered, ij_obj)        
+                    sholl_df, sholl_mask, profile = sholl_analysis(centered, ij_obj, headless=configs['headless'])        
                 
                 median_axon_pixel = mediun_axon_length_pixels(sholl_df, cnt)
                 median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
