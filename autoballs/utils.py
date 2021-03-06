@@ -229,12 +229,20 @@ def center_eyeball(image, cnt):
 
 
 
-def sholl_analysis(img, ij_obj, starting_radius=0, step_size=5, headless=True):
+def sholl_analysis(img, ij_obj, cnt=None, starting_radius=0, step_size=5, headless=True):
     """
     Thank you Tiago Ferreira for the input
     https://forum.image.sc/t/automated-sholl-analysis-headless/49601
     https://github.com/morphonets/SNT/blob/master/src/main/resources/script_templates/Neuroanatomy/Analysis/Sholl_Extract_Profile_From_Image_Demo.py
     """
+    if cnt.any() != None:
+        (x,y),radius = cv2.minEnclosingCircle(cnt)
+        starting_radius = int(radius)
+        print(starting_radius)
+
+
+
+
 
     ij = ij_obj
     imp = ij.py.to_java(img)

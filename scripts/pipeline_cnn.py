@@ -42,7 +42,7 @@ def config():
 
     configs['path'] = path
 
-    configs['sample'] = '20210226 Cam Franze'
+    configs['sample'] = '20210305 Cam Franze' #'20210226 Cam Franze'
     configs['metadata_file'] = f"{configs['path']}/{configs['sample']}{os.sep}metadata.txt"
     configs['metadata'] = biometa(configs['metadata_file'])
     configs['frog_metadata'] = configs['metadata']['frog']
@@ -52,7 +52,7 @@ def config():
     configs['results_path'] = 'results' + os.sep + configs['sample'] + '_results'
     configs['seg'] = True
     configs['headless'] = True
-    configs['step_size'] = 50
+    configs['step_size'] = 5
     configs['device'] = 'cuda'
 
     if configs['create_results']:
@@ -76,15 +76,15 @@ def main():
     files = glob.glob(f"{configs['path']}/{configs['sample']}/**/series.nd2", recursive=True)
 
     log = defaultdict(list)
-    i = 163
     for idx, file in enumerate(files):
         list_of_images = imread(file)
 
         if list_of_images:
             for idx_img, image in enumerate(list_of_images):
                 frog_metadata = list(map(configs['frog_metadata'].get, filter(lambda x:x in file, configs['frog_metadata'])))
-                gel_metadata = list(map(configs['gel_metadata'].get, filter(lambda x:x in file.lower(), configs['gel_metadata'])))
+                gel_metadata = list(map(configs['gel_metadata'].get, filter(lambda x:x in file.lower(), configs['gel_metadata'])))[-1]
 
+                print(f'Doing {idx} out of {len(files)} for stack {idx_img} out of {len(list_of_images)}')
 
                 filtered = fft_bandpass_filter(image, clache=False)
 
@@ -96,17 +96,16 @@ def main():
                         model=best_model, 
                         pre_fn=get_preprocessing(preproc_fn), 
                         device=configs['device'])
+                    target = ~np.array(target*255, dtype='uint8')
                 else:
                     target = filtered
                 centered = center_eyeball(target, cnt)
-
-                cv2.imwrite('test.png', target)
-
 
                 if configs['sholl']:
                     sholl_df, sholl_mask, profile = sholl_analysis(
                         centered, 
                         ij_obj, 
+                        cnt=cnt,
                         step_size=configs['step_size'], 
                         headless=configs['headless'],
                         )        
@@ -114,27 +113,33 @@ def main():
                     median_axon_pixel = mediun_axon_length_pixels(sholl_df)
                     median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
                     
-                    print(gel_metadata[0], 'mediun axon length: ', median_axon_um)
-                    # cv2.imwrite(f'{idx}-{idx_img}-len{int(median_axon_um)}.png',sholl_mask)
+                    print(gel_metadata, 'mediun axon length: ', median_axon_um)
                     
-                    log['Gel type'].append(gel_metadata[0])
+                    log['Gel type'].append(gel_metadata)
                     log['Median axon'].append(median_axon_um)
-
-                    cv2.imwrite('test.png', sholl_mask)
 
                     res_df = pd.DataFrame(log)
                     res_df.to_csv(configs['results_path']+'/res.csv')
 
                 if configs['create_results'] and configs['sholl']:
-                    pass
-                    # images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
-                    # fig = visualize(show=False, **images)
-                    # plt.savefig(configs['results_path'] + '/example_proc.png')
-                    # plt.close()
+                    images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
+
+                    n = len(images)
+                    fig = plt.figure(figsize=(16, 5))
+                    for i, (name, image) in enumerate(images.items()):
+                        plt.subplot(1, n, i + 1)
+                        plt.xticks([])
+                        plt.yticks([])
+                        plt.title(' '.join(name.split('_')).title())
+                        plt.imshow(image,cmap='gray')
+                        plt.tight_layout()
+                    plt.savefig(configs['results_path'] + f'/{idx}-{idx_img}.png')
+                    plt.close()
     
 
     view_dataset_results(res_df)
-    plt.savefig('results.jpeg') 
+    plt.savefig(configs['results_path']+'results.jpeg') 
+    plt.close()
 
 
 
