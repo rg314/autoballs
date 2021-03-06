@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import torch
+import segmentation_models_pytorch as smp
 
 from autoballs.utils import (biometa, 
                             imread, 
@@ -20,8 +22,11 @@ from autoballs.utils import (biometa,
                             mediun_axon_length_pixels,
                             view_dataset_results,
                             )
+
+from autoballs.network.dataloader import get_preprocessing
 from autoballs.ijconn import get_imagej_obj
 import autoballs
+from segment import get_mask
 
 
 def config():
@@ -42,12 +47,13 @@ def config():
     configs['metadata'] = biometa(configs['metadata_file'])
     configs['frog_metadata'] = configs['metadata']['frog']
     configs['gel_metadata'] = configs['metadata']['gel']
-    configs['sholl'] = False
-    configs['create_results'] = False
+    configs['sholl'] = True
+    configs['create_results'] = True
     configs['results_path'] = 'results' + os.sep + configs['sample'] + '_results'
-    configs['seg'] = False
+    configs['seg'] = True
     configs['headless'] = True
     configs['step_size'] = 50
+    configs['device'] = 'cuda'
 
     if configs['create_results']:
         if not os.path.exists(configs['results_path']):
@@ -57,6 +63,12 @@ def config():
 
 def main():
     configs = config()
+
+
+    best_model = torch.load('./best_model_1.pth')
+    preproc_fn = smp.encoders.get_preprocessing_fn('efficientnet-b0', 'imagenet')
+    preprocessing_fn = get_preprocessing(preproc_fn)
+
 
     if configs['sholl']:
         ij_obj = get_imagej_obj(headless=configs['headless'])
@@ -76,50 +88,53 @@ def main():
 
                 filtered = fft_bandpass_filter(image, clache=False)
 
+                eyeball, cnt = locate_eyeball(image)
 
-                cv2.imwrite(f'train_data/img_{str(i).zfill(4)}.tif', filtered)
-                i += 1
-                print(i)
+                if configs['seg']:
+                    target = get_mask(
+                        filtered, 
+                        model=best_model, 
+                        pre_fn=get_preprocessing(preproc_fn), 
+                        device=configs['device'])
+                else:
+                    target = filtered
+                centered = center_eyeball(target, cnt)
 
-                # eyeball, cnt = locate_eyeball(image)
-
-                # if configs['seg']:
-                #     target = segment(filtered, eyeball)
-                # else:
-                #     target = filtered
-                # centered = center_eyeball(target, cnt)
+                cv2.imwrite('test.png', target)
 
 
-                # if configs['sholl']:
-                #     sholl_df, sholl_mask, profile = sholl_analysis(
-                #         centered, 
-                #         ij_obj, 
-                #         step_size=configs['step_size'], 
-                #         headless=configs['headless'],
-                #         )        
+                if configs['sholl']:
+                    sholl_df, sholl_mask, profile = sholl_analysis(
+                        centered, 
+                        ij_obj, 
+                        step_size=configs['step_size'], 
+                        headless=configs['headless'],
+                        )        
                 
-                #     median_axon_pixel = mediun_axon_length_pixels(sholl_df)
-                #     median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
+                    median_axon_pixel = mediun_axon_length_pixels(sholl_df)
+                    median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
                     
-                #     print(gel_metadata[0], 'mediun axon length: ', median_axon_um)
-                #     # cv2.imwrite(f'{idx}-{idx_img}-len{int(median_axon_um)}.png',sholl_mask)
+                    print(gel_metadata[0], 'mediun axon length: ', median_axon_um)
+                    # cv2.imwrite(f'{idx}-{idx_img}-len{int(median_axon_um)}.png',sholl_mask)
                     
-                #     log['Gel type'].append(gel_metadata[0])
-                #     log['Median axon'].append(median_axon_um)
+                    log['Gel type'].append(gel_metadata[0])
+                    log['Median axon'].append(median_axon_um)
 
-                #     res_df = pd.DataFrame(log)
-                #     res_df.to_csv(configs['results_path']+'/res.csv')
+                    cv2.imwrite('test.png', sholl_mask)
 
-                # if configs['create_results'] and configs['sholl']:
-                #     pass
-                #     # images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
-                #     # fig = visualize(show=False, **images)
-                #     # plt.savefig(configs['results_path'] + '/example_proc.png')
-                #     # plt.close()
+                    res_df = pd.DataFrame(log)
+                    res_df.to_csv(configs['results_path']+'/res.csv')
+
+                if configs['create_results'] and configs['sholl']:
+                    pass
+                    # images =dict(image=image, locate_eye=eyeball, filter_center=centered, sholl=sholl_mask)
+                    # fig = visualize(show=False, **images)
+                    # plt.savefig(configs['results_path'] + '/example_proc.png')
+                    # plt.close()
     
 
-    # view_dataset_results(res_df)
-    # plt.savefig('results.jpeg') 
+    view_dataset_results(res_df)
+    plt.savefig('results.jpeg') 
 
 
 

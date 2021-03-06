@@ -3,8 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import statsmodels.stats.multicomp as multi
 
-data = pd.read_csv('res.csv')
-
+data = pd.read_csv('results/20210226 Cam Franze_results/res.csv')
 
 
 sns.set_style("white")

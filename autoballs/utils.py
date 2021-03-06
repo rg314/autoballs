@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from nd2reader import ND2Reader
 from scipy.signal import convolve2d
 
+
+import seaborn as sns
+import statsmodels.stats.multicomp as multi
+
 import autoballs.helper as helper
 from scyjava import jimport
 
@@ -89,7 +93,7 @@ def kuwahara_filter(image, kernel_size=5):
     return filtered_image
 
 
-def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12, bandpass_low = 120, gamma=1, normalize=True):
+def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12, bandpass_low = 120, gamma=1, normalize=True, clache=True):
 
     img_fft = helper.fft(image)
     fft_filters = helper.bandpass_filter(pixel_microns=pixel_microns,
@@ -107,23 +111,21 @@ def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12
     data *= (255.0/data.max())
     data = data.astype('uint8')
 
-    # apply clache to enhance contrast
-    img = cv2.cvtColor(data, cv2.COLOR_GRAY2BGR)
-    lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
-    cl = clahe.apply(l)
-    limg = cv2.merge((cl,a,b))
-    final = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)[:,:,0]
+    if clache:
+        # apply clache to enhance contrast
+        img = cv2.cvtColor(data, cv2.COLOR_GRAY2BGR)
+        lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        cl = clahe.apply(l)
+        limg = cv2.merge((cl,a,b))
+        final = cv2.cvtColor(limg, cv2.COLOR_LAB2RGB)[:,:,0]
 
-    # threshold
-    threshold = cv2.adaptiveThreshold(final,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,6)
+        # threshold
+        data = cv2.adaptiveThreshold(final,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,6)
 
-    cv2.imwrite('test.tif', threshold)
-    plt.imshow(threshold)
-    plt.show()
+    return data
 
-    return threshold
 
 def segment(image, eyeball):
     # denoise while preserving edges
@@ -221,13 +223,13 @@ def center_eyeball(image, cnt):
     offsetX = (wi-cX)
     offsetY = (he-cY)
     T = np.float32([[1, 0, offsetX], [0, 1, offsetY]]) 
-    centered_image = cv2.warpAffine(~image, T, (width, height))
+    centered_image = cv2.warpAffine(~image.astype('uint8')*255, T, (width, height))
 
     return ~centered_image
 
 
 
-def sholl_analysis(img, ij_obj, headless=True):
+def sholl_analysis(img, ij_obj, starting_radius=0, step_size=5, headless=True):
     """
     Thank you Tiago Ferreira for the input
     https://forum.image.sc/t/automated-sholl-analysis-headless/49601
@@ -236,6 +238,11 @@ def sholl_analysis(img, ij_obj, headless=True):
 
     ij = ij_obj
     imp = ij.py.to_java(img)
+    
+    ImagePlusClass    = jimport('ij.ImagePlus')
+    imp = ij.dataset().create(imp)
+    imp = ij.convert().convert(imp, ImagePlusClass)
+    
 
 
     # from sc.fiji.snt.analysis.sholl import (Profile, ShollUtils)
@@ -243,6 +250,7 @@ def sholl_analysis(img, ij_obj, headless=True):
     ShollUtils = jimport('sc.fiji.snt.analysis.sholl.ShollUtils')
     ImageParser2D = jimport('sc.fiji.snt.analysis.sholl.parsers.ImageParser2D')
     ImageParser3D = jimport('sc.fiji.snt.analysis.sholl.parsers.ImageParser3D')
+    
 
     # We may want to set specific options depending on whether we are parsing a
     # 2D or a 3D image. If the image has multiple channels/time points, we set
@@ -262,7 +270,8 @@ def sholl_analysis(img, ij_obj, headless=True):
     # 2. from the image itself: e.g., IJ.setAutoThreshold(imp, "Huang")
     # If the image is already binarized, we can skip setting threshold levels:
     if not (imp.isThreshold() or imp.getProcessor().isBinary()):
-        ij.setAutoThreshold(imp, "Otsu dark")
+        IJ = jimport('ij.IJ')
+        IJ.setAutoThreshold(imp, "Otsu dark")
 
     # Center: the x,y,z coordinates of center of analysis. In a real-case usage
     # these would be retrieved from ROIs or a centroid of a segmentation routine.
@@ -279,7 +288,7 @@ def sholl_analysis(img, ij_obj, headless=True):
     # Sampling distances: start radius (sr), end radius (er), and step size (ss).
     # A step size of zero would mean 'continuos sampling'. Note that end radius
     # could also be set programmatically, e.g., from a ROI
-    parser.setRadii(10, 5, parser.maxPossibleRadius()) # (sr, er, ss)
+    parser.setRadii(starting_radius, step_size, parser.maxPossibleRadius()) # (sr, ss, er)
 
     # We could now set further options as we would do in the dialog prompt:
     parser.setHemiShells('none')
@@ -349,4 +358,24 @@ def mediun_axon_length_pixels(sholl_df):
 
     return med
 
-    
+
+def view_dataset_results(data):    
+    sns.set_style("white")
+    sns.set_style("ticks")
+    ax = sns.boxplot(y='Median axon', x='Gel type', data=data, palette="Blues")
+    ax = sns.swarmplot(y='Median axon', x='Gel type', data=data, color=".25", size=10)
+    ax.set_ylabel('Axon length [um]')
+    ax.set_xlabel('Gel type [kPa]')
+
+    test = multi.MultiComparison(data['Median axon'], data['Gel type'])
+    res = test.tukeyhsd()
+    res_table1 = res.summary()
+    print(res_table1)
+
+
+    test = multi.pairwise_tukeyhsd(data['Median axon'], data['Gel type'], alpha=0.05)
+    res_table2 = test.summary()
+    print(res_table2)
+
+    return ax
+

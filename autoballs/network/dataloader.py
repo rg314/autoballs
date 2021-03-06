@@ -1,4 +1,4 @@
-from utlis import get_img_from_seg
+from autoballs.utils import get_img_from_seg
 
 import cv2
 from PIL import Image
@@ -32,11 +32,16 @@ class Dataset(BaseDataset):
             classes=None, 
             augmentation=None, 
             preprocessing=None,
-            size=256
+            in_channels=3,
+            size=256,
+            test=True
     ):
         self.ids = len(masks_dir)
         self.masks_fps = masks_dir
         self.images_fps = image_dir
+        self.in_channels = in_channels
+        self.test = test
+        self.size = size
         
         # convert str names to class values on masks
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
@@ -46,19 +51,21 @@ class Dataset(BaseDataset):
     
     def __getitem__(self, i):
         
+
         # read data
         image = cv2.imread(self.images_fps[i])
-        mask = cv2.imread(self.masks_fps[i], 0)
-
-
         image = np.asarray(image)[:,:,:3]
-        # image = image.reshape(image.shape[0], image.shape[0],1)
-        # image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-        # mask = np.asarray(mask)[:,:,0]
-        mask = 1.0 * (mask > 0)
-        mask = mask.reshape(mask.shape[0], mask.shape[1],1)
+
+        if not self.test:
+            mask = cv2.imread(self.masks_fps[i], 0)
+            mask = 1.0 * (mask > 0)
+            mask = mask.reshape(mask.shape[0], mask.shape[1],1 )
+        
+        else:
+            mask = np.zeros((self.size, self.size, 1))
 
         # cv2.imwrite('test.png', mask)
+        # image = image.reshape(image.shape + (1,))
         
 
         # extract certain classes from mask (e.g. cars)
@@ -73,8 +80,11 @@ class Dataset(BaseDataset):
         
         # apply preprocessing
         if self.preprocessing:
-            sample = self.preprocessing(image=image, mask=mask)
+            sample = self.preprocessing(image=image, mask=mask) 
             image, mask = sample['image'], sample['mask']
+
+        if self.in_channels != 3:
+            image = image[:1,:,:]
             
         return image, mask
         
@@ -88,8 +98,9 @@ def get_training_augmentation(size):
         albu.Resize(SIZE,SIZE),
 
         albu.HorizontalFlip(p=0.5),
+        albu.RandomRotate90(p=0.5),
+        albu.Rotate(p=0.5),
 
-        # albu.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
 
 
         # albu.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
@@ -105,6 +116,14 @@ def get_training_augmentation(size):
 
 
 def get_validation_augmentation(size=256):
+    """Add paddings to make image shape divisible by 32"""
+    SIZE = size
+    test_transform = [
+        albu.Resize(SIZE,SIZE),
+    ]
+    return albu.Compose(test_transform)
+
+def get_test_augmentation(size=256):
     """Add paddings to make image shape divisible by 32"""
     SIZE = size
     test_transform = [

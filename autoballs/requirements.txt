@@ -16,7 +16,7 @@ networkx==2.5
 numpy==1.18.3
 opencv-python==4.5.1.48
 pandas==1.2.3
-Pillow<7
+Pillow==8.1.1
 PIMS==0.5
 psutil==5.8.0
 pyimagej==1.0.0
