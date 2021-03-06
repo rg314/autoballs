@@ -118,6 +118,10 @@ def fft_bandpass_filter(image, pixel_microns = 1024 / 1331.2, bandpass_high = 12
     # threshold
     threshold = cv2.adaptiveThreshold(final,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,6)
 
+    cv2.imwrite('test.tif', threshold)
+    plt.imshow(threshold)
+    plt.show()
+
     return threshold
 
 def segment(image, eyeball):

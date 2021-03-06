@@ -38,8 +38,8 @@ def config():
     configs['metadata'] = biometa(configs['metadata_file'])
     configs['frog_metadata'] = configs['metadata']['frog']
     configs['gel_metadata'] = configs['metadata']['gel']
-    configs['sholl'] = True
-    configs['create_results'] = True
+    configs['sholl'] = False
+    configs['create_results'] = False
     configs['results_path'] = configs['sample'] + '_results'
     configs['seg'] = False
 
