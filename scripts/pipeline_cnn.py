@@ -56,7 +56,7 @@ def config():
     configs['seg'] = True
     configs['headless'] = True
     configs['step_size'] = 5
-    configs['device'] = 'cpu'
+    configs['device'] = 'cuda'
     configs['best_model'] = './best_model_1.pth'
 
     if configs['create_results']:
@@ -66,10 +66,11 @@ def config():
     return configs
 
 def main(configs):
-
-    best_model = torch.load(configs['best_model'])
+    best_model = torch.hub.load_state_dict_from_url('https://docs.google.com/uc?export=download&id=13CLZoNyvCt2K46UvAyHUqH7099FbnBh_')
     if configs['device'] == 'cpu':
         best_model = best_model.to('cpu')
+    else:
+        best_model = best_model.to('cuda')
     preproc_fn = smp.encoders.get_preprocessing_fn('efficientnet-b0', 'imagenet')
     preprocessing_fn = get_preprocessing(preproc_fn)
 
