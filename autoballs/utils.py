@@ -238,10 +238,6 @@ def sholl_analysis(img, ij_obj, cnt=None, starting_radius=0, step_size=5, headle
     if cnt.any() != None:
         (x,y),radius = cv2.minEnclosingCircle(cnt)
         starting_radius = int(radius)
-        print(starting_radius)
-
-
-
 
 
     ij = ij_obj
@@ -355,6 +351,7 @@ def resize(img, scale_percent=50):
 
 def mediun_axon_length_pixels(sholl_df):
     rad, inters = sholl_df[['Radius', 'Inters.']].T.values
+    rad = rad - rad[0]
 
     output = []
     i =0 
@@ -364,7 +361,10 @@ def mediun_axon_length_pixels(sholl_df):
         i+=1
     med = np.median(ones)
 
-    return med
+    if med > 400:
+        return np.nan
+    else:
+        return med
 
 
 def view_dataset_results(data):    

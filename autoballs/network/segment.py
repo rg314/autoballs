@@ -1,10 +1,8 @@
+import cv2
 import torch
 import numpy as np
-import cv2
-
 
 from autoballs.network.dataloader import get_preprocessing
-
 
 def get_mask(img, model, pre_fn, device='cuda'):
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)

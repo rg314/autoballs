@@ -24,9 +24,17 @@ from autoballs.utils import (biometa,
                             )
 
 from autoballs.network.dataloader import get_preprocessing
+from autoballs.network.segment import get_mask
 from autoballs.ijconn import get_imagej_obj
 import autoballs
-from segment import get_mask
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 
 def config():
@@ -41,8 +49,7 @@ def config():
     
 
     configs['path'] = path
-
-    configs['sample'] = '20210305 Cam Franze' #'20210226 Cam Franze'
+    configs['sample'] = '20210226 Cam Franze' #'20210226 Cam Franze'
     configs['metadata_file'] = f"{configs['path']}/{configs['sample']}{os.sep}metadata.txt"
     configs['metadata'] = biometa(configs['metadata_file'])
     configs['frog_metadata'] = configs['metadata']['frog']
@@ -53,7 +60,8 @@ def config():
     configs['seg'] = True
     configs['headless'] = True
     configs['step_size'] = 5
-    configs['device'] = 'cuda'
+    configs['device'] = 'cpu'
+    configs['best_model'] = './best_model_1.pth'
 
     if configs['create_results']:
         if not os.path.exists(configs['results_path']):
@@ -62,10 +70,12 @@ def config():
     return configs
 
 def main():
+    blockPrint()
     configs = config()
 
-
-    best_model = torch.load('./best_model_1.pth')
+    best_model = torch.load(configs['best_model'])
+    if configs['device'] == 'cpu':
+        best_model = best_model.to('cpu')
     preproc_fn = smp.encoders.get_preprocessing_fn('efficientnet-b0', 'imagenet')
     preprocessing_fn = get_preprocessing(preproc_fn)
 
@@ -74,6 +84,8 @@ def main():
         ij_obj = get_imagej_obj(headless=configs['headless'])
 
     files = glob.glob(f"{configs['path']}/{configs['sample']}/**/series.nd2", recursive=True)
+    files = [x for x in files if '/ve' not in x]
+    files = [x for x in files if 'fg1' in x]
 
     log = defaultdict(list)
     for idx, file in enumerate(files):
@@ -83,8 +95,7 @@ def main():
             for idx_img, image in enumerate(list_of_images):
                 frog_metadata = list(map(configs['frog_metadata'].get, filter(lambda x:x in file, configs['frog_metadata'])))
                 gel_metadata = list(map(configs['gel_metadata'].get, filter(lambda x:x in file.lower(), configs['gel_metadata'])))[-1]
-
-                print(f'Doing {idx} out of {len(files)} for stack {idx_img} out of {len(list_of_images)}')
+                parent_dir = os.path.basename(os.path.dirname(file))
 
                 filtered = fft_bandpass_filter(image, clache=False)
 
@@ -113,7 +124,11 @@ def main():
                     median_axon_pixel = mediun_axon_length_pixels(sholl_df)
                     median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
                     
-                    print(gel_metadata, 'mediun axon length: ', median_axon_um)
+                    enablePrint()
+                    print(f'Doing {idx} out of {len(files)} for stack {idx_img} out of {len(list_of_images)}. {gel_metadata} mediun axon length: {median_axon_um}')
+                    blockPrint()
+                    cv2.imwrite(configs['results_path'] + f'/{parent_dir}_s{idx_img}.tif', centered)
+                    sholl_df.to_csv(configs['results_path'] + f'/{parent_dir}_s{idx_img}.csv')
                     
                     log['Gel type'].append(gel_metadata)
                     log['Median axon'].append(median_axon_um)
@@ -127,18 +142,20 @@ def main():
                     n = len(images)
                     fig = plt.figure(figsize=(16, 5))
                     for i, (name, image) in enumerate(images.items()):
+                        cmap = 'gray' if name != 'sholl' else 'jet' 
                         plt.subplot(1, n, i + 1)
                         plt.xticks([])
                         plt.yticks([])
                         plt.title(' '.join(name.split('_')).title())
-                        plt.imshow(image,cmap='gray')
+                        plt.imshow(image,cmap=cmap)
                         plt.tight_layout()
-                    plt.savefig(configs['results_path'] + f'/{idx}-{idx_img}.png')
+                        
+                    plt.savefig(configs['results_path'] + f'/{parent_dir}_s{idx_img}.png')
                     plt.close()
     
 
     view_dataset_results(res_df)
-    plt.savefig(configs['results_path']+'results.jpeg') 
+    plt.savefig(configs['results_path']+'/results.jpeg') 
     plt.close()
 
 
