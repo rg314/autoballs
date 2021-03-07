@@ -3,13 +3,10 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/35999546/109693171-44312080-7b81-11eb-812a-2659d07cd632.png" alt="Sublime's custom image"/>
+  <img src="https://user-images.githubusercontent.com/35999546/109693171-44312080-7b81-11eb-812a-2659d07cd632.png" alt="Autoballs logo" width="400"/>
 </p>
 
 Pipeline for analysis of ex vivo explants
-
-Please note there are a few bugs I need to fix... for example when there's an eyeball and no axons or more than 1 eyeball in the FOV. This is work in progress.
-
 
 ## Installation
 While writing this package I tried my best not to reinvent the wheel for that reason there are a number of dependencies on [Fiji](https://imagej.net/Fiji). When installing the package please ensure that you create a conda env with relatvent [openjdk8](https://openjdk.java.net/install/) and [Maven](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Furthermore, due to constant updates of Fuji please use ```get_fiji_version.sh``` script to download the working version.
