@@ -33,6 +33,13 @@ Install autoballs in editable mode
 pip install -e .
 ```
 
+For training you might need to install pytorch CUDA otherwise for general useage segmentation will be fine on CPU. However, for CUDA run
+
+```
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+```
+
+or for the latest version check out PyTorch [PyTorch](https://pytorch.org/get-started/locally/)
 
 ## File structure
 Please note you will need to follow the following file conventions for this to work properly. I’ve not yet included the AFM section but I’m planning on adding this part in as well so there will be a later dependency. 
@@ -143,8 +150,8 @@ Elastic 100 Pa          Glass  -72.2719  0.103 -156.2637   11.72  False
  Elastic 1 kPa          Glass -108.3469 0.0091 -192.3387 -24.355   True
 Elastic 100 Pa          Glass  -72.2719  0.103 -156.2637   11.72  False
 -----------------------------------------------------------------------
-
 ```
+
 ![image](https://user-images.githubusercontent.com/35999546/110236403-941b3900-7f2d-11eb-8769-5c23c5cc3b16.png)
 
 ## Example
