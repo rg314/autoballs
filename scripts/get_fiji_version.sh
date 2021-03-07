@@ -1,6 +1,10 @@
 #!/bin/sh
 
-if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  FIJIPATH='https://docs.google.com/uc?export=download&id=1KxbVQIsav-jZeFsXx0D8XmJZlYu-8k4o'
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  FIJIPATH='https://docs.google.com/uc?export=download&id=1RXXXwjBRTtiRyw5F1mhEB44U9_UyCyVA'
+
   if [ ! -d "Fiji" ]; then
     mkdir Fiji
   fi
@@ -8,7 +12,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
   cd Fiji                            && \
 
   if [ ! -d "Fiji.app" ]; then
-      wget --no-check-certificate -r 'https://docs.google.com/uc?export=download&id=14X0PI0YEIUESLvCMzsRiD1vLTuo9bTyr' -O Fiji.app.zip  && \
+      wget --no-check-certificate -r $FIJIPATH -O Fiji.app.zip  && \
       unzip Fiji.app.zip                                  && \
       rm Fiji.app.zip
   fi

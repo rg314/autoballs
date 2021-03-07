@@ -335,6 +335,8 @@ def sholl_analysis(img, ij_obj, cnt=None, starting_radius=0, step_size=5, headle
             'Inters.': list(ij.py.from_java(profile.counts()))
         }
     )
+
+    sholl_df = filter_discontinuity(sholl_df)
     
     mask = np.array(ij.py.from_java(parser.getMask()))
 
@@ -361,10 +363,7 @@ def mediun_axon_length_pixels(sholl_df):
         i+=1
     med = np.median(ones)
 
-    if med > 400:
-        return np.nan
-    else:
-        return med
+    return med
 
 
 def view_dataset_results(data):    
@@ -385,5 +384,51 @@ def view_dataset_results(data):
     res_table2 = test.summary()
     print(res_table2)
 
+    # with open(txt_path, 'w') as f:
+        # f.write()
+
     return ax
 
+def getMaxLength(arr): 
+    n = len(arr)
+    count = 0 
+    result = 0 
+  
+    for i in range(0, n): 
+        if (arr[i] != 1): 
+            count = 0
+        else: 
+            count+= 1 
+            result = max(result, count)  
+          
+    return result  
+
+def find_subsequence(seq, subseq):
+    if not subseq.any():
+        return 0
+    target = np.dot(subseq, subseq)
+    candidates = np.where(np.correlate(seq,
+                                       subseq, mode='valid') == target)[0]
+    # some of the candidates entries may be false positives, double check
+    check = candidates[:, np.newaxis] + np.arange(len(subseq))
+    mask = np.all((np.take(seq, check) == subseq), axis=-1)
+    return candidates[mask][0]
+
+
+def filter_discontinuity(df):
+        rad, inters = df[['Radius', 'Inters.']].T.values
+
+        # find longest 1s
+        ans = getMaxLength(inters)
+        target = np.ones(ans)
+        # find index where longest ones start
+        idx = find_subsequence(inters, target)
+
+        # zero discontinuity
+        inters[idx:] = 0
+
+        # update df
+        df['Radius'] = rad
+        df['Inters.'] = inters
+
+        return df

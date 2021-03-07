@@ -13,5 +13,5 @@ def test_get_validation_augmentation():
 def test_to_tensor():
     pass
 
-def test_get_preprocessing(:
+def test_get_preprocessing():
     pass

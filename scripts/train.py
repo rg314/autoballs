@@ -40,7 +40,7 @@ MODEL_NAME = 'best_model_1.pth'
 
 
 if os.path.exists(MODEL_NAME):
-    model_idx = int(MODEL_NAME.split('_')[-1]) + 1
+    model_idx = int(os.path.splitext(MODEL_NAME)[0].split('_')[-1]) + 1
     MODEL_NAME = f'best_model_{model_idx}.pth'
 
 values = [DATA_DIR, ENCODER, ENCODER_WEIGHTS, CLASSES, ACTIVATION, DEVICE, TRAIN, VIS, BATCH_SIZE, SIZE, IMAGE_TYPE, IN_CHANNELS, MODEL_NAME]
