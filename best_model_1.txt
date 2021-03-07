@@ -1,1 +1,0 @@
-{'DATA_DIR': 'train_data/..', 'ENCODER': 'efficientnet-b0', 'ENCODER_WEIGHTS': 'imagenet', 'CLASSES': ['background'], 'ACTIVATION': 'sigmoid', 'DEVICE': 'cuda', 'TRAIN': True, 'VIS': False, 'BATCH_SIZE': 4, 'SIZE': 512, 'IMAGE_TYPE': 'data_tile_512', 'IN_CHANNELS': 1, 'MODEL_NAME': 'best_model_1.pth'}

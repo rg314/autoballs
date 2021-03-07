@@ -9,6 +9,7 @@ Fiji/
 results/
 train_data/
 *.pth
+*.txt
 
 
 # Byte-compiled / optimized / DLL files
