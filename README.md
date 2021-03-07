@@ -58,4 +58,4 @@ Please note you will need to follow the following file conventions for this to w
 
 
 ## Example
-pics/example_proc.png![example_proc](https://user-images.githubusercontent.com/35999546/109683001-d67ff700-7b76-11eb-980a-da1e136b2bb5.png)
+![image](https://user-images.githubusercontent.com/35999546/110234828-8f9e5280-7f24-11eb-86ae-512017c80779.png)
