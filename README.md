@@ -135,25 +135,33 @@ A resuls folder will created and stats will be performed on the sample i.e.
 
 ```
 (autoballs) ryan@ryan:~/Documents/GitHub/autoballs$ python scripts/pipeline_cnn.py 
-          Multiple Comparison of Means - Tukey HSD, FWER=0.05          
-=======================================================================
-    group1         group2      meandiff p-adj    lower    upper  reject
------------------------------------------------------------------------
- Elastic 1 kPa Elastic 100 Pa   -36.075 0.6065 -129.2556 57.1056  False
- Elastic 1 kPa          Glass -108.3469 0.0091 -192.3387 -24.355   True
-Elastic 100 Pa          Glass  -72.2719  0.103 -156.2637   11.72  False
------------------------------------------------------------------------
-          Multiple Comparison of Means - Tukey HSD, FWER=0.05          
-=======================================================================
-    group1         group2      meandiff p-adj    lower    upper  reject
------------------------------------------------------------------------
- Elastic 1 kPa Elastic 100 Pa   -36.075 0.6065 -129.2556 57.1056  False
- Elastic 1 kPa          Glass -108.3469 0.0091 -192.3387 -24.355   True
-Elastic 100 Pa          Glass  -72.2719  0.103 -156.2637   11.72  False
------------------------------------------------------------------------
+           Multiple Comparison of Means - Tukey HSD, FWER=0.05            
+==========================================================================
+    group1           group2       meandiff p-adj   lower    upper   reject
+--------------------------------------------------------------------------
+ Elastic 1 kPa     Elastic 100 Pa -43.0119 0.0031 -74.6687 -11.3551   True
+ Elastic 1 kPa              Glass -15.4829 0.4857 -43.6976  12.7318  False
+ Elastic 1 kPa Viscoelastic 1 kPa -17.8286 0.7525 -66.5802  30.9231  False
+Elastic 100 Pa              Glass   27.529 0.0466   0.2912  54.7668   True
+Elastic 100 Pa Viscoelastic 1 kPa  25.1833 0.5246 -23.0095  73.3762  False
+         Glass Viscoelastic 1 kPa  -2.3457    0.9 -48.3508  43.6594  False
+--------------------------------------------------------------------------
+           Multiple Comparison of Means - Tukey HSD, FWER=0.05            
+==========================================================================
+    group1           group2       meandiff p-adj   lower    upper   reject
+--------------------------------------------------------------------------
+ Elastic 1 kPa     Elastic 100 Pa -43.0119 0.0031 -74.6687 -11.3551   True
+ Elastic 1 kPa              Glass -15.4829 0.4857 -43.6976  12.7318  False
+ Elastic 1 kPa Viscoelastic 1 kPa -17.8286 0.7525 -66.5802  30.9231  False
+Elastic 100 Pa              Glass   27.529 0.0466   0.2912  54.7668   True
+Elastic 100 Pa Viscoelastic 1 kPa  25.1833 0.5246 -23.0095  73.3762  False
+         Glass Viscoelastic 1 kPa  -2.3457    0.9 -48.3508  43.6594  False
+--------------------------------------------------------------------------
 ```
 
-![image](https://user-images.githubusercontent.com/35999546/110236403-941b3900-7f2d-11eb-8769-5c23c5cc3b16.png)
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/35999546/110252098-a328d800-7f7b-11eb-941b-605ae460e7d5.png" alt="drawing" width="400"/>
+</p>
 
 ## Example
 ![image](https://user-images.githubusercontent.com/35999546/110234828-8f9e5280-7f24-11eb-86ae-512017c80779.png)
