@@ -33,19 +33,20 @@ import autoballs
 
 
 
-def config():
+def config(sample, path=None):
     configs = dict()
     
-    if sys.platform == "linux" or sys.platform == "linux2":
-        path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
-    elif sys.platform == "win32":
-        path = 'C:\\Users\\ryan\\Google Drive\\TFM Cambridge\\2021\\Frogs'
-    elif sys.platform == 'darwin':
-        path = '/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
-    
+    if not path:
+        if sys.platform == "linux" or sys.platform == "linux2":
+            path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
+        elif sys.platform == "win32":
+            path = 'C:\\Users\\ryan\\Google Drive\\TFM Cambridge\\2021\\Frogs'
+        elif sys.platform == 'darwin':
+            path = '/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
+        
 
     configs['path'] = path
-    configs['sample'] = '20210226 Cam Franze' #'20210226 Cam Franze'
+    configs['sample'] = sample
     configs['metadata_file'] = f"{configs['path']}/{configs['sample']}{os.sep}metadata.txt"
     configs['metadata'] = biometa(configs['metadata_file'])
     configs['frog_metadata'] = configs['metadata']['frog']
@@ -184,15 +185,11 @@ def main(configs):
 
 
 # get configs
-configs = config()
-print(configs)
+# configs = config('20210226 Cam Franze')
+# print(configs)
+# main(configs)
 
 # run for target sample
-configs['sample'] = '20210226 Cam Franze'
-print(configs)
-main(configs)
-
-# run for target sample
-configs['sample'] = '20210305 Cam Franze'
+configs = config('20210305 Cam Franze')
 print(configs)
 main(configs)
