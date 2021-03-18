@@ -31,11 +31,12 @@ from autoballs.network.segment import get_mask
 from autoballs.ijconn import get_imagej_obj
 import autoballs
 
+import argparse
 
-
-def config(sample, path=None):
+def config(path, sample, device):
     configs = dict()
     
+    # # TODO: deprecate these local specific paths, we should be getting it from argparse above
     if not path:
         if sys.platform == "linux" or sys.platform == "linux2":
             path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
@@ -57,7 +58,7 @@ def config(sample, path=None):
     configs['seg'] = True
     configs['headless'] = True
     configs['step_size'] = 5
-    configs['device'] = 'cuda'
+    configs['device'] = device
     configs['best_model'] = './best_model_1.pth'
 
     if configs['create_results']:
@@ -189,7 +190,25 @@ def main(configs):
 # print(configs)
 # main(configs)
 
+
+# get arguments
+parser = argparse.ArgumentParser(description='Take in arguments')
+
+parser.add_argument('-cwd', metavar='\'\'', type=str, nargs=1, required=True,
+                    help='current working directory (that this file sits in)')
+parser.add_argument('-sample', metavar='\'20210226 Cam Franze/\'', type=str, nargs=1, required=True,
+                    help='path to actual dataset')
+parser.add_argument('-device', metavar='\'cuda\'', type=str, nargs=1, required=True,
+                    help='are you running this on cuda or cpu?')
+
+args = parser.parse_args()
+
+cwd = args.cwd[0]
+sample = args.sample[0]
+device = args.device[0]
+
 # run for target sample
-configs = config('20210305 Cam Franze')
+# configs = config(cwd, sample, device)
+configs = config(cwd, sample, device)
 print(configs)
 main(configs)

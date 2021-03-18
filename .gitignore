@@ -10,6 +10,8 @@ results/
 train_data/
 *.pth
 *.txt
+*.zip
+__MACOSX*
 
 
 # Byte-compiled / optimized / DLL files
