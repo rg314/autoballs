@@ -35,7 +35,7 @@ pip install -e .
 For training you might need to install pytorch CUDA otherwise for general useage segmentation will be fine on CPU. However, for CUDA run
 
 ```
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+conda install torch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 ```
 
 or for the latest version check out PyTorch [PyTorch](https://pytorch.org/get-started/locally/)
