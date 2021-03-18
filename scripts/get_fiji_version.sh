@@ -16,7 +16,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 
   cd ..
 
-elif [ "$OSTYPE" == "darwin"* ]; then
+elif [[ "$OSTYPE" == "darwin"* ]]; then
 
   if [ ! -d "Fiji" ]; then
     mkdir Fiji
@@ -24,7 +24,7 @@ elif [ "$OSTYPE" == "darwin"* ]; then
 
   cd Fiji                            && \
 
-  if [ ! -d "Fiji.app" ]; then
+  if [[ ! -d "Fiji.app" ]]; then
       wget --no-check-certificate -r 'https://docs.google.com/uc?export=download&id=1RXXXwjBRTtiRyw5F1mhEB44U9_UyCyVA' -O Fiji.app.zip  && \
       unzip Fiji.app.zip                                  && \
       rm Fiji.app.zip
@@ -32,7 +32,7 @@ elif [ "$OSTYPE" == "darwin"* ]; then
 
   cd ..
 
-elif [ "$OSTYPE" == "win32" ]; then
+elif [[ "$OSTYPE" == "win32" ]]; then
 	echo 'Not implemented for windows, visit https://docs.google.com/uc?export=download&id=14X0PI0YEIUESLvCMzsRiD1vLTuo9bTyr'
 fi
 
