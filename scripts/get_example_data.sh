@@ -8,7 +8,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "darwin"* ]]; then
   cd data                            && \
 
   if [ ! -d "example" ]; then
-      wget --no-check-certificate -r 'https://docs.google.com/uc?export=download&id={ADD ZIP ID}' -O example.zip  && \
+      wget --no-check-certificate -r 'https://docs.google.com/uc?export=download&id=1S_ApQhM38IYPJtKZy4VFpKS7ob2AjLul' -O example.zip  && \
       unzip example.zip                                  && \
       rm example.zip
   fi
