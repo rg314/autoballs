@@ -27,10 +27,12 @@ def imread(file):
 
 
 def biometa(metadata):
-    with open(metadata, 'r') as f:
-        lines = f.readlines()
-    return eval(''.join([x.strip('\n') for x in lines]))
-
+    try:
+        with open(metadata, 'r') as f:
+            lines = f.readlines()
+        return eval(''.join([x.strip('\n') for x in lines]))
+    except:
+        return None
 
 def make_figure(list_of_images):
     fig=plt.figure(figsize=(16, 16))

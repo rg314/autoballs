@@ -154,7 +154,7 @@ def main(configs):
                     log['Gel type'].append(gel_metadata)
                     log['Median axon'].append(median_axon_um)
                     log['File'].append(f'{parent_dir}_s{idx_img}')
-                    log['Frog meta'].append(frog_metadata)
+                    # log['Frog meta'].append(frog_metadata)
 
                     res_df = pd.DataFrame(log)
                     res_df.to_csv(configs['results_path']+'/results.csv')
@@ -192,14 +192,15 @@ def main(configs):
 # print(configs)
 # main(configs)
 
-targets = ['20210219 Cam Franze', '20210226 Cam Franze', '20210305 Cam Franze', '20210312 Cam Franze']
-
-
+targets = ['20210312 Cam Franze']
+# done '20210226 Cam Franze', '20210305 Cam Franze',
+# , '20210312 Cam Franze'
+# 20210219 Cam Franze
 for target in targets:
 # run for target sample
-    try:
-        configs = config(target)
-        print(configs)
-        main(configs)
-    except:
-        continue
+    # try:
+    configs = config(target)
+    print(configs)
+    main(configs)
+    # except:
+        # continue
