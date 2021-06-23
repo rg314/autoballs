@@ -28,9 +28,10 @@ def config():
     configs = dict()
     
     if sys.platform == "linux" or sys.platform == "linux2":
-        path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
+        raise OSError('not run')
+        # path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
     elif sys.platform == "win32":
-        path = 'C:\\Users\\ryan\\Google Drive\\TFM Cambridge\\2021\\Frogs'
+        path = 'C:\\Users\\ryan\\Documents\\GitHub\\Easy-to-use_TFM_package\\test_data'
     elif sys.platform == 'darwin':
         path = '/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
     

@@ -31,14 +31,15 @@ from autoballs.network.segment import get_mask
 from autoballs.ijconn import get_imagej_obj
 import autoballs
 
+PATH = None
 
 
-def config(sample, path=None):
+def config(sample, path=PATH):
     configs = dict()
     
     if not path:
         if sys.platform == "linux" or sys.platform == "linux2":
-            path = '/media/ryan/9684408684406AB7/Users/ryan/Google Drive/TFM Cambridge/2021/Frogs'
+            path = '/home/ryan/Google Drive/TFM Cambridge/2021/Frogs'
         elif sys.platform == "win32":
             path = 'C:\\Users\\ryan\\Google Drive\\TFM Cambridge\\2021\\Frogs'
         elif sys.platform == 'darwin':
@@ -57,7 +58,7 @@ def config(sample, path=None):
     configs['seg'] = True
     configs['headless'] = True
     configs['step_size'] = 5
-    configs['device'] = 'cuda'
+    configs['device'] = 'cpu'
     configs['best_model'] = './best_model_1.pth'
 
     if configs['create_results']:
@@ -87,6 +88,7 @@ def main(configs):
 
         if list_of_images:
             for idx_img, image in enumerate(list_of_images):
+                print(image.metadata['pixel_microns'])
                 # get metadata and target directory
                 frog_metadata = list(map(configs['frog_metadata'].get, filter(lambda x:x in file, configs['frog_metadata'])))
                 gel_metadata = list(map(configs['gel_metadata'].get, filter(lambda x:x in file.lower(), configs['gel_metadata'])))[-1]
@@ -127,6 +129,7 @@ def main(configs):
                     median_axon_pixel = mediun_axon_length_pixels(sholl_df)
                     median_axon_um = median_axon_pixel * image.metadata['pixel_microns']
                     
+
                     print(f'Doing {idx+1} out of {len(files)} for stack {idx_img} out of {len(list_of_images)}. {gel_metadata} mediun axon length: {median_axon_um}')
 
                     # target files for mask and csv
@@ -189,7 +192,14 @@ def main(configs):
 # print(configs)
 # main(configs)
 
+targets = ['20210219 Cam Franze', '20210226 Cam Franze', '20210305 Cam Franze', '20210312 Cam Franze']
+
+
+for target in targets:
 # run for target sample
-configs = config('20210305 Cam Franze')
-print(configs)
-main(configs)
+    try:
+        configs = config(target)
+        print(configs)
+        main(configs)
+    except:
+        continue

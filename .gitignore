@@ -10,7 +10,12 @@ results/
 train_data/
 *.pth
 *.txt
-
+.vscode-server
+.bash_history
+*.gnupg
+*.nv
+*.jgo
+*.wget-hsts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
